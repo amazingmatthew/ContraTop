@@ -7,7 +7,6 @@ import torch
 
 def self_similarity_and_rogue(all_hidden_states, token_list, inference_list, n_layers_start = 0, n_layers = 13, analyze_rogue = False):
     all_layer_self_sim = {} # store all self-similarity data for all layers
-
     self_sim_rogue_dimensions = {}
 
     for layer in tqdm(range(n_layers_start, n_layers), desc='Layer Progress'):
