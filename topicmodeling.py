@@ -8,7 +8,8 @@ import umap.umap_ as umap
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
-
+import itertools
+from collections import Counter
 
 class TopicModeling:
     def __init__(self, text, model='all-mpnet-base-v2', device='cuda', self_sim_threshold=0.5):
@@ -40,7 +41,6 @@ class TopicModeling:
 
     def self_similarity(self, all_hidden_states, token_list, inference_list):
         ss_score = {}
-
         temp = all_hidden_states[-1]
 
         for token in tqdm(token_list, desc='Token Progress'):
@@ -66,8 +66,7 @@ class TopicModeling:
         token_list = list(itertools.chain.from_iterable(tokenized))
         counter = Counter(token_list)
 
-        index_count = [(index, count) for (index, count) in counter.most_common() if count >= 5]
-        candidate_vocab = [index for (index, count) in counter.most_common() if count >= 5]
+        candidate_vocab = [index for (index, count) in counter.most_common() if count >= 5] # filter out less frequency tokens
 
         all_hidden_states = encoder.model.get_all_hidden_states(encoder.encode(corpus))
 
@@ -85,13 +84,13 @@ class TopicModeling:
 
         return filtered_candidate_vocab
         
-    def centroid(self, embedding, candidate_vocab, cluster_labels):
+    def centroid(self, embedding, filtered_candidate_vocab, cluster_labels):
         text = self.corpus
         encoder = self.encoder
         centroids = {}
         rep = embedding
-        rep_rep = encoder.encode(candidate_vocab)
-        total = candidate_vocab
+        rep_rep = encoder.encode(filtered_candidate_vocab)
+        total = filtered_candidate_vocab
 
         globals()['frame'] = pd.DataFrame()
         globals()['frame']['text'] = text
