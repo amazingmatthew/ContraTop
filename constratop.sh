@@ -1,6 +1,6 @@
 #!/bin/bash --login
 #$ -cwd
-#$ -l nvidia_v100=2
+#$ -l nvidia_v100=1
 
 module load compilers/gcc/8.2.0
 module load apps/binapps/anaconda3/2022.10
