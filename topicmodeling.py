@@ -123,7 +123,7 @@ class TopicModeling:
 
     def build_candidates(self): # return candidate vocabulary and embeddings
         # Generate candidate vocabulary using n-grams
-        candidate_vocab = candidate(self.corpus, mode="n_gram", ngram_range=(1, 3)).build_vocab()
+        candidate_vocab = candidate(self.corpus, mode="n_gram", ngram_range=(1, 1)).build_vocab()
 
         print("Tokenizing text with model:")
         encoded_input = self.tokenizer(candidate_vocab, padding=True, truncation=True, return_tensors='pt')

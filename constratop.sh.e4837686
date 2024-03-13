@@ -1,0 +1,17 @@
+/mnt/iusers01/course_accounts/p66988ym/.local/lib/python3.9/site-packages/torch/_utils.py:831: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  return self.fget.__get__(instance, owner)()
+Batches:   0%|          | 0/32 [00:00<?, ?it/s]Batches:   3%|▎         | 1/32 [00:01<00:37,  1.21s/it]Batches:   6%|▋         | 2/32 [00:01<00:17,  1.68it/s]Batches:   9%|▉         | 3/32 [00:01<00:10,  2.64it/s]Batches:  16%|█▌        | 5/32 [00:01<00:05,  4.57it/s]Batches:  22%|██▏       | 7/32 [00:01<00:03,  6.40it/s]Batches:  28%|██▊       | 9/32 [00:01<00:02,  8.27it/s]Batches:  34%|███▍      | 11/32 [00:02<00:02, 10.17it/s]Batches:  44%|████▍     | 14/32 [00:02<00:01, 13.03it/s]Batches:  53%|█████▎    | 17/32 [00:02<00:00, 15.93it/s]Batches:  62%|██████▎   | 20/32 [00:02<00:00, 19.06it/s]Batches:  72%|███████▏  | 23/32 [00:02<00:00, 13.34it/s]Batches:  91%|█████████ | 29/32 [00:02<00:00, 21.09it/s]Batches: 100%|██████████| 32/32 [00:03<00:00, 10.66it/s]
+/mnt/iusers01/course_accounts/p66988ym/.local/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+Batches:   0%|          | 0/32 [00:00<?, ?it/s]Batches:   3%|▎         | 1/32 [00:00<00:05,  5.37it/s]Batches:   6%|▋         | 2/32 [00:00<00:05,  5.78it/s]Batches:   9%|▉         | 3/32 [00:00<00:04,  6.74it/s]Batches:  16%|█▌        | 5/32 [00:00<00:03,  8.44it/s]Batches:  22%|██▏       | 7/32 [00:00<00:02,  9.90it/s]Batches:  28%|██▊       | 9/32 [00:00<00:02, 11.44it/s]Batches:  34%|███▍      | 11/32 [00:01<00:01, 12.88it/s]Batches:  44%|████▍     | 14/32 [00:01<00:01, 15.35it/s]Batches:  53%|█████▎    | 17/32 [00:01<00:00, 17.97it/s]Batches:  66%|██████▌   | 21/32 [00:01<00:00, 21.41it/s]Batches:  81%|████████▏ | 26/32 [00:01<00:00, 27.12it/s]Batches: 100%|██████████| 32/32 [00:01<00:00, 19.22it/s]
+Token Progress:   0%|          | 0/7575 [00:00<?, ?it/s]Token Progress:   0%|          | 0/7575 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/net/scratch2/p66988ym/TopicModeling/ContraTop/topicmodeling.py", line 222, in <module>
+    cluster_labels, centroid_keywords = topic_modeling.pipeline(clustering_method='hdbscan', min_cluster_size=2)
+  File "/net/scratch2/p66988ym/TopicModeling/ContraTop/topicmodeling.py", line 204, in pipeline
+    filtered_candidate_vocab, rep_rep = self.build_candidates()
+  File "/net/scratch2/p66988ym/TopicModeling/ContraTop/topicmodeling.py", line 145, in build_candidates
+    ss_score = self.self_similarity(last_hidden_state, list(inference_list.keys()), inference_list)
+  File "/net/scratch2/p66988ym/TopicModeling/ContraTop/topicmodeling.py", line 111, in self_similarity
+    token_embedding = np.array(temp[sentence_index][token_index])
+IndexError: index 3727 is out of bounds for axis 0 with size 1000
