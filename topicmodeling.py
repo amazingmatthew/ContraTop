@@ -215,7 +215,6 @@ documents = documents[:1000]
 documents = [doc for doc in documents if doc is not None]
 print("length of document", len(documents))
 
- 
 
 MODEL_NAME = 'sentence-transformers/all-mpnet-base-v2'
 topic_modeling = TopicModeling(documents, model_name=MODEL_NAME, self_sim_threshold=0.5)
