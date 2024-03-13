@@ -103,15 +103,23 @@ class TopicModeling:
 
     def self_similarity(self, last_hidden_state, token_list, inference_list):
         ss_score = {}
+        temp = last_hidden_state
 
         for token in tqdm(token_list, desc='Token Progress'):
             token_embeddings = []
-            for token_index in inference_list[token]:
-                token_embedding = np.array(last_hidden_state[token_index])
+            for (sentence_index, token_index) in inference_list[token]:
+                if sentence_index >= len(temp):
+                    print(f"Sentence index {sentence_index} out of bounds for temp array with shape {temp.shape}")
+                    continue
+                if token_index >= len(temp[sentence_index]):
+                    print(f"Token index {token_index} out of bounds for sentence at index {sentence_index} with shape {temp[sentence_index].shape}")
+                    continue
+                token_embedding = np.array(temp[sentence_index][token_index])
                 token_embeddings.append(token_embedding)
             token_embeddings = np.array(token_embeddings)
-            if len(token_embeddings) > 0:
-                sim_matrix = cosine_similarity([token_embeddings], [token_embeddings])
+            token_embeddings = token_embeddings.reshape(-1, 1)
+            sim_matrix = cosine_similarity(token_embeddings, token_embeddings)
+            if len(sim_matrix) != 1:
                 self_similarity = round(
                     (np.sum(sim_matrix) - len(sim_matrix)) / (len(sim_matrix) * (len(sim_matrix) - 1)), 3)
                 ss_score[token] = self_similarity
@@ -120,28 +128,35 @@ class TopicModeling:
 
 
     def build_candidates(self): # return candidate vocabulary and embeddings
+        # Generate candidate vocabulary using n-grams
         candidate_vocab = candidate(self.corpus, mode="n_gram", ngram_range=(1, 1)).build_vocab()
-        print(f"Candidate vocabulary length: {len(candidate_vocab)}")
     
-        if len(candidate_vocab) == 0:
-            print("No candidate vocabulary generated. Check the input corpus or candidate class parameters.")
-            return {}
+        print("Tokenizing text with model:")
+        encoded_input = self.tokenizer(candidate_vocab, padding=True, truncation=True, return_tensors='pt')
+        print("Finished Tokenizing:")
+        tokenized = encoded_input['input_ids'].tolist()
 
-        print("Encoding candidate vocabulary with model:")
-        rep_rep = self.encoder.encode(candidate_vocab, show_progress_bar=True, batch_size=self.batch_size)
+        last_hidden_state = self.encoding()
 
         inference_list = {}
-        for i, token in enumerate(candidate_vocab):
-            inference_list[token] = [(i, 0)]  # Each token corresponds to a single position in the encoded representation
+        for token in set(candidate_vocab):
+            token_id = self.tokenizer.encode(token, add_special_tokens=False)[0]  # Convert token to token ID
+            position_list = []
+            for sen_index, sen in enumerate(tokenized):
+                if token_id in sen:
+                    token_index = sen.index(token_id)
+                    position_list.append((sen_index, token_index))
+            inference_list[token] = position_list
+        print(inference_list.keys())
+        print(len(inference_list))
 
-        ss_score = self.self_similarity(rep_rep, list(inference_list.keys()), inference_list)
-        filtered_candidate_vocab = [token for token, self_sim in ss_score.items() if self_sim >= self.self_sim_threshold]
-        print(f"filtered_candidate_vocab: {filtered_candidate_vocab}")
-        
-        rep_candidate = {token: rep_rep[i] for token, i in inference_list.items() if token in filtered_candidate_vocab}
-        print(f"rep_candidate: {rep_candidate}")
+        ss_score = self.self_similarity(last_hidden_state, list(inference_list.keys()), inference_list)
+        filtered_candidate_vocab = [self.tokenizer.decode([token]) for token, self_sim in ss_score.items() if self_sim >= self.self_sim_threshold]
 
-        return rep_candidate # dic store filtered_candidates as keys and corresponding embeddings as values
+        rep_rep = self.encoder.encode(filtered_candidate_vocab)
+        rep_rep = self.DR(rep_rep)
+
+        return filtered_candidate_vocab, rep_rep
 
     def DR(self, embedding):
         dimension = self.dimension
@@ -160,8 +175,9 @@ class TopicModeling:
         cluster_labels = clustering.labels_
         return cluster_labels, _
 
-    def centroid(self, reduced_embedding, filtered_candidate_vocab, reduced_rep_candidate, cluster_labels):
+    def centroid(self, reduced_embedding, filtered_candidate_vocab, rep_rep, cluster_labels):
         text = self.corpus
+        encoder = self.encoder
         centroids = {}
         rep = reduced_embedding
         total = filtered_candidate_vocab
@@ -178,10 +194,8 @@ class TopicModeling:
         centroid_keywords = {}
         for key in centroids.keys():
             centroid = centroids[key]
-            similarity = cosine_similarity([centroid], reduced_rep_candidate)
-            centroid_keyword_index = similarity[0].argsort()[-10:][::-1]
-            #valid_indices = [i for i in centroid_keyword_index if i < len(total)]
-            #centroid_keywords[key] = [total[i] for i in valid_indices]
+            similarity = cosine_similarity([centroid], rep_rep)
+            centroid_keyword_index = similarity[0].argsort()[-3:][::-1]
             centroid_keywords[key] = [total[i] for i in centroid_keyword_index]
 
         return centroid_keywords
@@ -194,12 +208,9 @@ class TopicModeling:
             cluster_labels, _ = self.agglomerative_clustering(reduced_embedding, n_clusters=n_clusters)
         if clustering_method == 'hdbscan':
             cluster_labels, _ = self.clustering(reduced_embedding, min_cluster_size=min_cluster_size)
-
-       
-        filtered_candidate_vocab, rep_candidate = self.build_candidates().items()
-
-        reduced_rep_candidate = self.DR(rep_candidate)
-        centroid_keywords = self.centroid(reduced_embedding, filtered_candidate_vocab, reduced_rep_candidate, cluster_labels)
+        
+        filtered_candidate_vocab, rep_rep = self.build_candidates()
+        centroid_keywords = self.centroid(reduced_embedding, filtered_candidate_vocab, rep_rep, cluster_labels)
         return cluster_labels, centroid_keywords
 
 
@@ -213,7 +224,7 @@ documents = [doc for doc in documents if doc is not None]
 print("length of document", len(documents))
 
 MODEL_NAME = 'sentence-transformers/all-mpnet-base-v2'
-topic_modeling = TopicModeling(documents, model_name=MODEL_NAME, self_sim_threshold=0)
+topic_modeling = TopicModeling(documents, model_name=MODEL_NAME, self_sim_threshold=0.5)
 cluster_labels, centroid_keywords = topic_modeling.pipeline(clustering_method='hdbscan', min_cluster_size=2)
 for cluster_id, keywords in centroid_keywords.items():
     print(f"Cluster {cluster_id}: {', '.join(keywords)}")
